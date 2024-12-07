@@ -59,7 +59,7 @@ const aw20216s_led_t PROGMEM g_aw20216s_leds[AW20216S_LED_COUNT] = {
     {0, SW3_CS16,  SW3_CS17,  SW3_CS18},   //|
     {0, SW4_CS16,  SW4_CS17,  SW4_CS18},   //DEL
 
-    {1, SW1_CS1,   SW1_CS2,   SW1_CS3},   //Cap
+    {1, SW1_CS1,   SW1_CS2,   SW1_CS3},   //Cap 43
     {1, SW2_CS1,   SW2_CS2,   SW2_CS3},   //A
     {1, SW3_CS1,   SW3_CS2,   SW3_CS3},   //S
     {1, SW4_CS1,   SW4_CS2,   SW4_CS3},   //D
@@ -74,7 +74,7 @@ const aw20216s_led_t PROGMEM g_aw20216s_leds[AW20216S_LED_COUNT] = {
     {1, SW3_CS10,  SW3_CS11,  SW3_CS12},   //Ent
     {1, SW4_CS10,  SW4_CS11,  SW4_CS12},   //PgUp
 
-    {1, SW1_CS4,   SW1_CS5,   SW1_CS6},   //Shift
+    {1, SW1_CS4,   SW1_CS5,   SW1_CS6},   //Shift 57
     {1, SW2_CS4,   SW2_CS5,   SW2_CS6},   //Z
     {1, SW3_CS4,   SW3_CS5,   SW3_CS6},   //X
     {1, SW4_CS4,   SW4_CS5,   SW4_CS6},   //C
@@ -88,7 +88,7 @@ const aw20216s_led_t PROGMEM g_aw20216s_leds[AW20216S_LED_COUNT] = {
     {1, SW2_CS13,  SW2_CS14,  SW2_CS15},   //Shift
     {1, SW3_CS13,  SW3_CS14,  SW3_CS15},   //Up
 
-    {1, SW1_CS7,   SW1_CS8,   SW1_CS9},   //Ctrl
+    {1, SW1_CS7,   SW1_CS8,   SW1_CS9},   //Ctrl 70
     {1, SW2_CS7,   SW2_CS8,   SW2_CS9},   //Com
     {1, SW3_CS7,   SW3_CS8,   SW3_CS9},   //Alt
     {1, SW5_CS7,   SW5_CS8,   SW5_CS9},   //SPAC1
