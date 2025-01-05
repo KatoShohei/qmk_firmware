@@ -19,6 +19,9 @@ _Bool L_QWERTY = 0;
 _Bool L_JTU = 0;
 _Bool L_NICOLA = 0;
 _Bool L_FUNC = 0;
+bool IS_BRETH = 1;
+bool DIS_BL = 1;
+
 
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -68,19 +71,19 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_FUNC] = LAYOUT_all(
          KC_ESC,              KC_F1,    KC_F2,  KC_WHOM,  KC_WSCH,   LSG(KC_S),RCS(KC_ESC),  KC_MPRV,  KC_MNXT,     KC_MPLY,     KC_PSCR,  KC_SCRL,   KC_PAUS,   KC_MUTE,
          KC_GRV,    KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,       KC_F6,    KC_F7,      KC_F8,    KC_F9,      KC_F10,      KC_F11,   KC_F12,    KC_DEL,    KC_END,
-        JU_CAPS,  _______,    KC_UP,  _______,  _______,  _______,     KC_HOME,  KC_PGDN,    KC_PGUP,   KC_END,     _______,     RGB_MOD,  RGB_RMOD,   RGB_TOG,    KC_INS,
-        _______,  KC_LEFT,  KC_DOWN, KC_RIGHT,  _______,  _______,     KC_LEFT,  KC_DOWN,      KC_UP, KC_RIGHT,     RGB_SPD,     RGB_SPI,             _______,    KC_APP,
-        _______,  _______,  _______,  _______,  _______,  _______,     _______,  _______,    RGB_VAD,  RGB_VAI,     RGB_HUI,     _______,             KC_PGUP,
+        JU_CAPS,  _______,    KC_UP,  _______,  _______,  _______,     KC_HOME,  KC_PGDN,    KC_PGUP,   KC_END,     _______,     _______,  BL_BRTG,   BL_TOGG,    KC_INS,
+        _______,  KC_LEFT,  KC_DOWN, KC_RIGHT,  _______,  _______,     KC_LEFT,  KC_DOWN,      KC_UP, KC_RIGHT,     _______,     _______,             _______,    KC_APP,
+        _______,  _______,  _______,  _______,  _______,  _______,     _______,  _______,    BL_DOWN,    BL_UP,     _______,     _______,             KC_PGUP,
         _______,  _______,  _______,            KC_EISU,  _______,    KC_KANA2,                        _______,     _______,     _______,  KC_HOME,   KC_PGDN,    KC_END
     )
 };
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [_QWERTY] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-    [_JTU] =    { ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-    [_NICOLA] = {  ENCODER_CCW_CW(KC_VOLD, KC_VOLU)},
-    [_FUNC] =   { ENCODER_CCW_CW(KC_BRIGHTNESS_DOWN, KC_BRIGHTNESS_UP)}
+    [_QWERTY] = { ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(RGB_VAD, RGB_VAI), ENCODER_CCW_CW(C(KC_WH_D), C(KC_WH_U)), ENCODER_CCW_CW(G(C(KC_LEFT)),G(C(KC_RGHT))) },
+    [_JTU] =    { ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(RGB_VAD, RGB_VAI), ENCODER_CCW_CW(C(KC_WH_D), C(KC_WH_U)), ENCODER_CCW_CW(G(C(KC_LEFT)),G(C(KC_RGHT))) },
+    [_NICOLA] = {  ENCODER_CCW_CW(KC_VOLD, KC_VOLU), ENCODER_CCW_CW(RGB_VAD, RGB_VAI), ENCODER_CCW_CW(C(KC_WH_D), C(KC_WH_U)), ENCODER_CCW_CW(G(C(KC_LEFT)),G(C(KC_RGHT))) },
+    [_FUNC] =   { ENCODER_CCW_CW(KC_BRIGHTNESS_DOWN, KC_BRIGHTNESS_UP), ENCODER_CCW_CW(KC_MS_WH_DOWN, KC_MS_WH_UP), ENCODER_CCW_CW(KC_MS_WH_DOWN, KC_MS_WH_UP), ENCODER_CCW_CW(KC_MS_WH_DOWN, KC_MS_WH_UP) }
 };
 #endif
 
@@ -103,22 +106,41 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     static bool lshift = false;//jtu-custom
     static bool rshift = false;//jtu-custom
 
+    /* TODO:
+    _FUNCレイヤーの場合、以下の処理を行う
+    BL_DOWN, BL_UPが押されている間は全点灯する
+    BL_TOGG, BL_BRTG, BL_STEPが押されている間は本来の発行パターンに戻す
+    L_NICOLAが立っており、MO(_FUNC)以外のキーが押されていないとき、全点灯する
+    L_NICOLAが立っておらず、MO(_FUNC)以外のキーが押されていないとき、全消灯する
+    */
+
     switch (keycode) {
-#    ifdef RGB_MATRIX_ENABLE
-        case RGB_TOG:
+        case MO(_FUNC):
             if (record->event.pressed) {
-                switch (rgb_matrix_get_flags()) {
-                    case LED_FLAG_ALL: {
-                        rgb_matrix_set_flags(LED_FLAG_NONE);
-                        rgb_matrix_set_color_all(0, 0, 0);
-                    } break;
-                    default: {
-                        rgb_matrix_set_flags(LED_FLAG_ALL);
-                    } break;
-                }
+                L_FUNC = 0;
+                IS_BRETH = is_backlight_breathing();
+                DIS_BL = !(is_backlight_enabled());
+                // if(L_NICOLA) {
+                //     backlight_enable();
+                //     backlight_disable_breathing();
+                // } else {
+                //     backlight_disable_breathing();
+                //     backlight_disable();
+                // }
+            } else {
+                // L_FUNC = 1;
+                // if (IS_BRETH) {
+                //     backlight_enable_breathing();
+                // } else {
+                //     backlight_disable_breathing();
+                // }
+                // if (DIS_BL) {
+                //     backlight_disable();
+                // } else {
+                //     backlight_enable();
+                // }
             }
-         return false;
-#    endif
+            return true;
         // 英数キー(Caps Lock)、nicola mode オフ
         case KC_EISU:
             if (record->event.pressed) {
@@ -132,6 +154,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 L_NICOLA = 0;
                 // L_JTU = 1;
             // #endif
+                // backlight_disable();
             }
             return false;
         // 英数モードのとき左親指キー(KANA)で、nicola mode オン
@@ -144,6 +167,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 nicola_on();
             // #endif
                 L_NICOLA = 1;
+                // backlight_enable();
             }
             return false;
 
@@ -161,6 +185,51 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 L_JTU = 0;
             }
             return false;
+        // case BL_TOGG:
+        //     if (record->event.pressed) {
+        //         DIS_BL = !DIS_BL;
+        //         if(DIS_BL) {
+        //             backlight_disable_breathing();
+        //             backlight_disable();
+        //         } else {
+        //             backlight_enable();
+        //             if(IS_BRETH) {
+        //                 backlight_enable_breathing();
+        //             }
+        //         }
+        //     } else {
+        //         if(L_NICOLA) {
+        //             backlight_enable();
+        //             backlight_disable_breathing();
+        //         } else {
+        //             backlight_disable();
+        //             backlight_disable_breathing();
+        //         }
+        //     }
+        //     return false;
+        // case BL_BRTG:
+        //     if (record->event.pressed) {
+        //         IS_BRETH = !IS_BRETH;
+        //         if(DIS_BL){
+        //             backlight_disable();
+        //             backlight_disable_breathing();
+        //         } else if(IS_BRETH) {
+        //             backlight_enable();
+        //             backlight_enable_breathing();
+        //         } else {
+        //             backlight_enable();
+        //             backlight_disable_breathing();
+        //         }
+        //     } else {
+        //         if(L_NICOLA){
+        //             backlight_disable_breathing();
+        //             backlight_enable();
+        //         } else {
+        //             backlight_disable_breathing();
+        //             backlight_disable();
+        //         }
+        //     }
+        //     return false;
     }
 
     // NICOLA親指シフト
@@ -488,105 +557,3 @@ void matrix_scan_user(void) {
 	timer_tick(now);	// drive nicola state-machine.
 }
 
-// This function switches the LED pattern for each layer.
-bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
-
-    // rgb_matrix_set_color_all(0, 0, 0);
-    // for (uint8_t i = led_min; i < led_max; i++)
-    //     RGB_MATRIX_INDICATOR_SET_COLOR(i, 0, 0, 0);
-    uint8_t va = rgb_matrix_get_val();
-    if (va < 20) {
-        va = 20;
-    }
-
-    if (host_keyboard_led_state().caps_lock) {
-        RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, va, va, va);
-    } else {
-        if (!rgb_matrix_get_flags()) {
-            RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, 0, 0, 0);
-        }
-    }
-
-    switch (get_highest_layer(layer_state)) {
-        case _QWERTY:
-            // RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, 255, 255, 0); // nicola : off
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, va, va, va); //
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_CENTER_INDEX, va, va, va); //
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, va, va, va); //
-            if (L_FUNC) {
-                rgb_matrix_set_color_all(0, 0, 0);
-                L_FUNC = 0;
-            }
-            break;
-        case _JTU:
-            // RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, 255, 255, 0); // nicola : off
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, 0, 0, va);
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_CENTER_INDEX, 0, 0, va);
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, 0, 0, va);
-            if (L_FUNC) {
-                rgb_matrix_set_color_all(0, 0, 0);
-                L_FUNC = 0;
-            }
-            break;
-        case _NICOLA:
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, va, va, 0); // nicola : on
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_CENTER_INDEX, va, va, 0); // nicola : on
-            RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, va, va, 0); // nicola : on
-            if (L_FUNC) {
-                rgb_matrix_set_color_all(0, 0, 0);
-                L_FUNC = 0;
-            }
-            break;
-        case _FUNC:
-            L_FUNC = 1;
-            if (L_NICOLA) {
-                for (uint8_t i = 0; i < 14; i++) {
-                    RGB_MATRIX_INDICATOR_SET_COLOR(i, va, va, 0);
-                }
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, va, va, 0); // nicola : on
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_CENTER_INDEX, va, va, 0); // nicola : on
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, va, va, 0); // nicola : on
-                // if (!rgb_matrix_get_flags()) {
-                //     for (uint8_t i = 0; i < 14; i++) {
-                //         RGB_MATRIX_INDICATOR_SET_COLOR(i, 0, 0, 0);
-                //     }
-                //     RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, 0, 0, 0); //
-                //     RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, 0, 0, 0); //
-                // }
-            } else if(L_QWERTY) {
-                for (uint8_t i = 0; i < 14; i++) {
-                    RGB_MATRIX_INDICATOR_SET_COLOR(i, va, va, va);
-                }
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, va, va, va);
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_CENTER_INDEX, va, va, va);
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, va, va, va);
-                // if (!rgb_matrix_get_flags()) {
-                //     for (uint8_t i = 0; i < 14; i++) {
-                //         RGB_MATRIX_INDICATOR_SET_COLOR(i, 0, 0, 0);
-                //     }
-                //     RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, 0, 0, 0); //
-                //     RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, 0, 0, 0); //
-                // }
-            } else if(L_JTU) {
-                for (uint8_t i = 0; i < 14; i++) {
-                    RGB_MATRIX_INDICATOR_SET_COLOR(i, 0, 0, va);
-                }
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, 0, 0, va);
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_CENTER_INDEX, 0, 0, va);
-                RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, 0, 0, va);
-                // if (!rgb_matrix_get_flags()) {
-                //     for (uint8_t i = 0; i < 14; i++) {
-                //         RGB_MATRIX_INDICATOR_SET_COLOR(i, 0, 0, 0);
-                //     }
-                //     RGB_MATRIX_INDICATOR_SET_COLOR(OYA_LEFT_INDEX, 0, 0, 0); //
-                //     RGB_MATRIX_INDICATOR_SET_COLOR(OYA_RIGHT_INDEX, 0, 0, 0); //
-                // }
-            } else {
-                for (uint8_t i = 0; i < 14; i++) {
-                    RGB_MATRIX_INDICATOR_SET_COLOR(i, 0, 0, 0);
-                }
-            }
-            break;
-    }
-    return false;
-}
