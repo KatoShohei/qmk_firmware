@@ -68,7 +68,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_FUNC] = LAYOUT_all(
          KC_ESC,              KC_F1,    KC_F2,  KC_WHOM,  KC_WSCH,   LSG(KC_S),RCS(KC_ESC),  KC_MPRV,  KC_MNXT,     KC_MPLY,     KC_PSCR,  KC_SCRL,   KC_PAUS,   KC_MUTE,
          KC_GRV,    KC_F1,    KC_F2,    KC_F3,    KC_F4,    KC_F5,       KC_F6,    KC_F7,      KC_F8,    KC_F9,      KC_F10,      KC_F11,   KC_F12,    KC_DEL,    KC_END,
-        JU_CAPS,  _______,    KC_UP,  _______,  _______,  _______,     KC_HOME,  KC_PGDN,    KC_PGUP,   KC_END,     _______,     RGB_MOD,  RGB_RMOD,   RGB_TOG,    KC_INS,
+        JU_CAPS,  _______,    KC_UP,  _______,  _______,  _______,     KC_HOME,  KC_PGDN,    KC_PGUP,   KC_END,     _______,     RGB_MOD, RGB_RMOD,   RGB_TOG,    KC_INS,
         _______,  KC_LEFT,  KC_DOWN, KC_RIGHT,  _______,  _______,     KC_LEFT,  KC_DOWN,      KC_UP, KC_RIGHT,     RGB_SPD,     RGB_SPI,             _______,    KC_APP,
         _______,  _______,  _______,  _______,  _______,  _______,     _______,  _______,    RGB_VAD,  RGB_VAI,     RGB_HUI,     _______,             KC_PGUP,
         _______,  _______,  _______,            KC_EISU,  _______,    KC_KANA2,                        _______,     _______,     _______,  KC_HOME,   KC_PGDN,    KC_END
@@ -161,6 +161,27 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 L_JTU = 0;
             }
             return false;
+        case KC_APP:
+            lshift = keyboard_report->mods & MOD_BIT(KC_LSFT);
+            rshift = keyboard_report->mods & MOD_BIT(KC_RSFT);
+            if (record->event.pressed) {
+                if (lshift || rshift) {
+                    if (lshift) unregister_code(KC_LSFT);
+                    if (rshift) unregister_code(KC_RSFT);
+                    register_code(KC_APP);
+                    unregister_code(KC_APP);
+                    if (lshift) register_code(KC_LSFT);
+                    if (rshift) register_code(KC_RSFT);
+                } else {
+                    register_code(KC_LSFT);
+                    register_code(KC_LGUI);
+                    register_code(KC_F23);
+                    unregister_code(KC_F23);
+                    unregister_code(KC_LGUI);
+                    unregister_code(KC_LSFT);
+                }
+            return false;
+            }
     }
 
     // NICOLA親指シフト
@@ -500,7 +521,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     }
 
     if (host_keyboard_led_state().caps_lock) {
-        RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, va, va, va);
+        RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, 0, va, 0);
     } else {
         if (!rgb_matrix_get_flags()) {
             RGB_MATRIX_INDICATOR_SET_COLOR(CAPS_LOCK_INDEX, 0, 0, 0);
