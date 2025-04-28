@@ -31,8 +31,9 @@ static bool is_nicola = false;      // 親指シフトがオンかオフか
 static uint8_t nicola_layer = 0;    // レイヤー番号
 static uint8_t n_modifier = 0;      // 押しているmodifierキーの数
 
-#define TIMEOUT_THRESHOLD (150)         // 文字キー長押しの場合の自動送出
+#define TIMEOUT_THRESHOLD (200)         // 文字キー長押しの場合の自動送出
 #define TIMEOUT_OYA_THRESHOLD (250)     // 親指キー長押しの場合(Space → F15:変換キー)
+#define KEYREPEAT_THRESHOLD (100)
 //**koseki(2024.5.16)
 //#define OVERLAP_THRESHOLD (20)
 #define OVERLAP_THRESHOLD (20)
@@ -51,16 +52,17 @@ static int nicola_o_key;
 static uint32_t nicola_m_time;
 static uint32_t nicola_o_time;
 
-static int key_process_guard = 0;
+static bool key_process_guard = false;
 void keypress_timer_expired(void);
 
 //**koseki(2024.4.25)
 static uint32_t event_time = 0;
 
 void timer_tick(uint32_t now) {
-	if (event_time != 0 && (now > event_time)) {
-		event_time = 0;
+	if (is_nicola && (now > event_time)) {
+		// event_time = 0;
 		keypress_timer_expired();
+        event_time = now + KEYREPEAT_THRESHOLD;
 	}
 }
 //**
@@ -85,6 +87,7 @@ void nicola_on(void) {
   is_nicola = true;
   nicola_clear();
   layer_on(nicola_layer);
+  event_time = 0;
 
 //   tap_code(KC_LANG1); // Mac
 //   tap_code(KC_HENK); // Win
@@ -94,6 +97,7 @@ void nicola_off(void) {
   is_nicola = false;
   nicola_clear();
   layer_off(nicola_layer);
+  event_time = 0;
 
 //   tap_code(KC_LANG2); // Mac
 //   tap_code(KC_MHEN); // Win
@@ -107,7 +111,7 @@ bool nicola_state(void) {
 // バッファをクリアする
 void nicola_clear(void) {
     nicola_int_state = NICOLA_STATE_S1_INIT;
-    key_process_guard = 0;
+    key_process_guard = false;
     //**koseki(2024.4.27)
     n_modifier = 0;
 }
@@ -185,7 +189,7 @@ void nicola_m_type(void) {
             case NG_K   : send_string("ki"); break;
             case NG_L   : send_string("i" ); break;
             case NG_SCLN: send_string("nn"); break;
-            case NG_QUOT:                  ; break;
+            case NG_QUOT: send_string(SS_TAP(X_INT4)); break;
 
             case NG_Z   : send_string("." ); break;     //ピリオドと句点は区別できない
             case NG_X   : send_string("hi"); break;
@@ -205,7 +209,7 @@ void nicola_o_type(void) {
     if(nicola_o_key == NG_SHFTL) {
         send_string(" ");         // 左親指キーはspace
     } else if(nicola_o_key == NG_SHFTR) {
-        send_string(SS_TAP(X_INT4));       // 右親指キーはへんかん
+        tap_code(KC_BSPC);       // 右親指キーはbackspace
     }
 }
 
@@ -213,7 +217,7 @@ void nicola_o_TO_type(void) {
     if(nicola_o_key == NG_SHFTL) {
         send_string(" ");         // 左親指キーはspace
     } else if(nicola_o_key == NG_SHFTR) {
-        send_string(SS_TAP(X_INT4));       // 右親指キーは単独打鍵で空白キー
+        tap_code(KC_BSPC);       // 右親指キーはbackspace
     }
 }
 
@@ -257,7 +261,7 @@ void nicola_om_type(void) {
             case NG_K   : send_string("gi"); break;
             case NG_L   : send_string("po"); break;
             case NG_SCLN:                    break;
-            case NG_QUOT: tap_code(KC_BSPC); break;
+            case NG_QUOT: send_string(SS_TAP(X_INT4)); break;
 
             case NG_Z   : send_string("xu"); break;
             case NG_X   : send_string("-" ); break;
@@ -309,7 +313,7 @@ void nicola_om_type(void) {
             case NG_K   : send_string("no"); break;
             case NG_L   : send_string("xyo");break;
             case NG_SCLN: send_string("xtu");break;
-            case NG_QUOT: tap_code(KC_BSPC); break;
+            case NG_QUOT: send_string(SS_TAP(X_INT4)); break;
 
             case NG_Z   :                    break;
             case NG_X   : send_string("bi"); break;
@@ -330,7 +334,7 @@ bool process_nicola(uint16_t keycode, keyrecord_t *record) {
 
   if (n_modifier > 0) return true;
 
-  key_process_guard = 1; // timeout entrance guard
+  key_process_guard = true; // timeout entrance guard
   bool cont_process = true;
   uint32_t curr_time = timer_read32();
 
@@ -467,7 +471,7 @@ bool process_nicola(uint16_t keycode, keyrecord_t *record) {
             break;
         }
         nicola_int_state = NICOLA_STATE_S1_INIT;
-        key_process_guard = 0;
+        key_process_guard = false;
         // continue processing current key, so this path returns true
     }
   } else { // key release
@@ -529,9 +533,10 @@ bool process_nicola(uint16_t keycode, keyrecord_t *record) {
             break;
         }
         cont_process = false;
+        event_time = curr_time + TIMEOUT_THRESHOLD;
     }
   }
-  key_process_guard = 0;
+  key_process_guard = false;
   return cont_process;
 }
 
@@ -554,6 +559,6 @@ void keypress_timer_expired(void) {
                 nicola_om_type();
                 break;
         }
-        nicola_int_state = NICOLA_STATE_S1_INIT;
+        //nicola_int_state = NICOLA_STATE_S1_INIT;
     }
 }
