@@ -35,6 +35,8 @@ void set_nicola(uint8_t);
 void timer_tick(uint32_t);
 //**
 
+bool jtu_process(void);
+
 typedef enum nicola_keycodes {
   NG_TOP = SAFE_RANGE,
   NG_M_TOP = NG_TOP,
